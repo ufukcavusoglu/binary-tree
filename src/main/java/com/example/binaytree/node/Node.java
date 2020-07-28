@@ -1,12 +1,18 @@
 package com.example.binaytree.node;
 
-import java.util.*;
-import java.util.function.BiFunction;
+import com.example.binaytree.utility.DoTill;
+import org.springframework.stereotype.Repository;
+
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Node<T extends Comparable<T>> {
     public T data;
     public Node<T> left;
     public Node<T> right;
+    /* public Node<T> root;*/
 
     public Node(T value) {
         data = value;
@@ -14,35 +20,31 @@ public class Node<T extends Comparable<T>> {
         right = null;
     }
 
-    public BiFunction<T,Node<T>,Node<T>> pathDecide = (T value, Node<T> current)
-            -> value.compareTo(current.data) >= 0  ? current.left : current.right;
+    private final Function<Node<T>, Node<T>> leftOrRight = keyNode
+            -> keyNode.data.compareTo(this.data) >= 0 ? this.left : this.right;
 
-    public Node<T> root;
+    BiConsumer<Node<T>, T> assign = (node, value) -> node = new Node<T>(value);
 
-    public Node<T> find(T key) {
-        Node<T> current = root;
-        while (Objects.nonNull(current) && current.data != key)
-            current = pathDecide.apply(key,current);
-        return current;
+    public Function<T, Node<T>> find = ((Function<T, Node<T>>) Node::new).andThen(keyNode
+            -> new DoTill<>(node1 -> !node1.data.equals(keyNode.data), leftOrRight).init.apply(this));
+
+    public Consumer<T> put = t -> assign.accept(((Function<T, Node<T>>) Node::new).andThen(keyNode
+            -> new DoTill<>(node -> Objects.nonNull(leftOrRight.apply(node)), leftOrRight)
+            .init.apply(this)).apply(t), t);
+
+    /*
+    public Node<T> getParent(T value, Node<T> node) {
+        Node<T> child = leftOrRight.apply(value, node);
+        return child.data.equals(value) ? node : getParent(value, child);
     }
 
-    public void put(Node<T> value,Node<T> current) {
-        if(current==null) current = value;
-        else put(value, pathDecide.apply(value.data,current));
+    public void remove(T value) {
+        Node<T> parent = getParent(value, root);
+        Node<T> current = leftOrRight.apply(value, parent);
+
+        leftOrRight.andThen(x -> x = null).apply(value, parent);
+        Set.of(current.left, current.right).iterator()
+                .forEachRemaining(x -> put(x, root));
     }
-
-    public Node<T> getParent(T value, Node<T> node){
-        Node<T> child = pathDecide.apply(value, node);
-        if(child.data.equals(value)) return node;
-        else return getParent(value,child);
-    }
-
-    public void remove(T value){
-        Node<T> parent = getParent(value,root);
-        Node<T> current = pathDecide.apply(value,parent);
-
-        pathDecide.andThen(x-> x = null).apply(value,parent);
-        Set.of(current.left,current.right).iterator().forEachRemaining(x-> put(x,root));
-    }
-
+*/
 }
